@@ -1,0 +1,64 @@
+name: tell-tool
+version: 0.1.0
+about: Nuts and bolts for TELL (Transposable ELement Locator)
+author: Manuel Holtgrewe <manuel.holtgrewe@bihealth.de>
+
+settings:
+  - SubcommandRequiredElseHelp
+  - ColorAuto
+  - DeriveDisplayOrder
+  - GlobalVersion
+  - StrictUtf8
+  - UnifiedHelpMessage
+
+args:
+  - verbose:
+      long: verbose
+      short: v
+      multiple: true
+      takes_value: false
+      global: true
+      help: Increase verbosity
+  - quiet:
+      long: quiet
+      short: q
+      multiple: true
+      takes_value: false
+      global: true
+      help: Decrease verbosity
+  - io_threads:
+      long: io-threads
+      short: t
+      takes_value: true
+      value_name: COUNT
+      global: true
+      default_value: '0'
+      help: Number of additional threads to use for (de)compression in I/O.
+
+subcommands:
+  - scan:
+      about: Scan BAM file for MEI candidate signal; extract sites and discordant reads.
+      args:
+        # Input- and output-related arguments ---------------------------------------------------
+        - input_bam:
+            long: input
+            takes_value: true
+            required: true
+            value_name: INPUT.bam
+            help: Path to BAI-indexed BAM file.
+        - output_bcf:
+            long: output-bcf
+            takes_value: true
+            required: true
+            value_name: SITES.bcf
+            help: >
+              Path to output BCF file with candidate site information. This will also write a
+              corresponding `.csi` file.
+        - output_bam:
+            long: output-bam
+            takes_value: true
+            required: true
+            value_name: READS.bam
+            help: >
+              Path to output BAM file with discordant reads.  This will also write a corresponding
+              `.bai` file.

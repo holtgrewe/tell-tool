@@ -1,0 +1,20 @@
+[package]
+name = "tell-tool"
+version = "0.1.0"
+authors = ["Manuel Holtgrewe <manuel.holtgrewe@bihealth.de>"]
+license = "MIT"
+readme = "README.md"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+error-chain = "*"
+rayon = "*"
+clap = {version = "*", features = ["yaml", "color", "suggestions"]}
+slog = {version = "*", features = ["max_level_trace", "release_max_level_debug"] }
+slog-term = "*"
+slog-async = "*"
+tempdir = "*"
+
+lib-scan = { path = "../lib-scan" }
