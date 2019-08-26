@@ -8,20 +8,20 @@ pub struct ScanOptions {
     pub io_threads: u32,
 
     /// Path to input BAM file.
-    pub path_input_bam: String,
+    pub input_bam: String,
     /// Path to output discordant reads BAM file.
-    pub path_output_bam: String,
+    pub output_bam: String,
     /// Path to output sites BCF file.
-    pub path_output_bcf: String,
+    pub output_bcf: String,
 }
 
 impl ScanOptions {
     /// Build new options from ArgMatches.
     pub fn new(matches: &ArgMatches) -> Self {
         Self {
-            path_input_bam: matches.value_of("input_bam").unwrap().to_string(),
-            path_output_bam: matches.value_of("output_bam").unwrap().to_string(),
-            path_output_bcf: matches.value_of("output_bcf").unwrap().to_string(),
+            input_bam: matches.value_of("input_bam").unwrap().to_string(),
+            output_bam: matches.value_of("output_bam").unwrap().to_string(),
+            output_bcf: matches.value_of("output_bcf").unwrap().to_string(),
             io_threads: matches
                 .value_of("io_threads")
                 .unwrap()

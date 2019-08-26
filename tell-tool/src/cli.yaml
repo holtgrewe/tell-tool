@@ -60,5 +60,4 @@ subcommands:
             required: true
             value_name: READS.bam
             help: >
-              Path to output BAM file with discordant reads.  This will also write a corresponding
-              `.bai` file.
+              Path to output BAM file with discordant reads.

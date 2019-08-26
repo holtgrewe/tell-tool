@@ -15,10 +15,96 @@ extern crate clap;
 extern crate slog;
 use slog::Logger;
 
+extern crate separator;
+use separator::Separatable;
+
+extern crate rust_htslib;
+use rust_htslib::bam::{self, Read as BamRead, Writer as BamWriter};
+use rust_htslib::bcf::{self, Writer as BcfWriter};
+
 mod options;
 pub use options::*;
 
+fn run_region(
+    logger: Logger,
+    rid: u32,
+    start: u32,
+    end: u32,
+    bam_reader: &mut bam::IndexedReader,
+    bam_writer: &mut bam::Writer,
+    bcf_writer: &mut bcf::Writer,
+) -> Result<()> {
+    debug!(
+        logger,
+        "Scanning region {}:{}-{}",
+        std::str::from_utf8(bam_reader.header().target_names()[rid as usize]).unwrap(),
+        (start + 1).separated_string(),
+        end.separated_string(),
+    );
+    bam_reader
+        .fetch(rid, start, end)
+        .chain_err(|| "Could not jump to region")?;
+
+    Ok(())
+}
+
 pub fn run(logger: Logger, options: ScanOptions) -> Result<()> {
     debug!(logger, "Running tell-tool scan, options = {:?}", &options);
+
+    // Open BAM reader for reading in the BAM File.
+    debug!(logger, "Opening input BAM file...");
+    let mut bam_reader = bam::IndexedReader::from_path(&options.input_bam)
+        .chain_err(|| "Could not open input BAM file")?;
+    if options.io_threads > 0 {
+        bam_reader
+            .set_threads(options.io_threads as usize)
+            .chain_err(|| "Could not set threads on BAM reader")?;
+    }
+    // TODO: implement reading of selected regions
+    // let tid: u32 = bam_reader.header().tid(chrom.as_bytes()).unwrap();
+    // bam_reader
+    //     .fetch(tid, *start as u32, *end as u32)
+    //     .chain_err(|| format!("Could not seek to region {}:{}-{}", chrom, start, end))?;
+
+    debug!(logger, "Opening output BAM file...");
+    let bam_header = bam::Header::from_template(bam_reader.header());
+    let mut bam_writer = BamWriter::from_path(&options.output_bam, &bam_header)
+        .chain_err(|| "Could not open output BAM file")?;
+
+    debug!(logger, "Opening output BCF file...");
+    let bcf_vcf = options.output_bcf.ends_with(".vcf")
+        || options.output_bcf.ends_with(".vcf.gz")
+        || options.output_bcf.ends_with(".vcf.bgz");
+    let bcf_unc = options.output_bcf.ends_with(".vcf");
+    let mut bcf_header = bcf::header::Header::new();
+    let now = chrono::Utc::now();
+    bcf_header.push_record(format!("##fileDate={}", now.format("%Y%m%d").to_string()).as_bytes());
+    for rid in 0..bam_reader.header().target_count() {
+        bcf_header.push_record(
+            format!(
+                "##contig=<ID={},length={}>",
+                std::str::from_utf8(bam_reader.header().target_names()[rid as usize]).unwrap(),
+                bam_reader.header().target_len(rid).unwrap()
+            )
+            .as_bytes(),
+        );
+    }
+    let mut bcf_writer = BcfWriter::from_path(&options.output_bcf, &bcf_header, bcf_unc, bcf_vcf)
+        .chain_err(|| "Could not open output BCF file")?;
+
+    for rid in 0..bam_reader.header().target_count() {
+        run_region(
+            logger.clone(),
+            rid,
+            0,
+            bam_reader.header().target_len(rid).unwrap(),
+            &mut bam_reader,
+            &mut bam_writer,
+            &mut bcf_writer,
+        )?
+    }
+
+    // TODO: build index on output BCF file
+
     Ok(())
 }
